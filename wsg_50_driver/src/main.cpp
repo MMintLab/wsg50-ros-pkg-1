@@ -335,8 +335,10 @@ void timer_cb(const ros::TimerEvent& ev)
 	joint_states.effort.resize(2);
 	joint_states.effort[0] = info.f_motor;
 	joint_states.effort[1] = info.f_motor;
-	
-	g_pub_joint.publish(joint_states);
+
+// TODO: set a parameter to choose whether to publish joint_states or not
+//	g_pub_joint.publish(joint_states); // Do not publish joint states ---- Commented by mik
+
 
 	// printf("Timer, last duration: %6.1f\n", ev.profile.last_duration.toSec() * 1000.0);
 }
