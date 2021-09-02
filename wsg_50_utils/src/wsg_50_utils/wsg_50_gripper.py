@@ -1,6 +1,6 @@
 import rospy
 from wsg_50_common.srv import Move, Conf
-from std_msgs.msg import Empty
+from std_srvs.srv import Empty
 
 
 class WSG50Gripper(object):
@@ -61,7 +61,7 @@ class WSG50Gripper(object):
         try:
             ack_proxy = rospy.ServiceProxy('wsg_50_driver/ack', Empty)
             ack_resp = ack_proxy()
-            return ack_resp.error
+            return ack_resp
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
 
@@ -70,6 +70,6 @@ class WSG50Gripper(object):
         try:
             homing_proxy = rospy.ServiceProxy('wsg_50_driver/homing', Empty)
             homing_resp = homing_proxy()
-            return homing_resp.error
+            return homing_resp
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
