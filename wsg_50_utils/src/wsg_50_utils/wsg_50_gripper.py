@@ -1,13 +1,24 @@
+import copy
 import rospy
+from threading import Lock
+from typing import Optional, Type
+
 from wsg_50_common.srv import Move, Conf
 from std_srvs.srv import Empty
+from wsg_50_common.msg import Status
 
 
 class WSG50Gripper(object):
     # Wraps the services into methods
-
     def __init__(self):
-        pass
+        self.data = None
+        self.lock = Lock()
+        self.status_topic_name = '/wsg_50_driver/status'
+        self.gripper_status_subscriber = rospy.Subscriber(self.status_topic_name, Status, self._gripper_status_callback)
+
+    def _gripper_status_callback(self, msg):
+        with self.lock:
+            self.data = msg
 
     def set_grasping_force(self, force):
         try:
@@ -73,3 +84,45 @@ class WSG50Gripper(object):
             return homing_resp
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
+
+    def get_status(self, block_until_data=True):
+        wait_for(lambda: not (block_until_data and self.data is None), 10, f"WSG50Gripper({self.status_topic_name})")
+        with self.lock:
+            status = copy.deepcopy(self.data)
+        return status
+
+    def get_width(self):
+        status = self.get_status()
+        width = status.width
+        return width
+
+    def get_force(self):
+        status = self.get_status()
+        force = status.force
+        return force
+
+    def get_speed(self):
+        status = self.get_status()
+        speed = status.speed
+        return speed
+
+
+
+
+# From arc_utilities
+def wait_for(func, warn_after: Optional[int] = 10, name: Optional[str] = ""):
+    """
+    Waits for function evaluation to be true. Exits cleanly from ros.
+
+    Introduces sleep delay, not recommended for time critical operations
+    """
+
+    start_t = rospy.Time.now()
+
+    while not func() and not rospy.is_shutdown():
+        if warn_after is not None and rospy.Time.now() - start_t > rospy.Duration(secs=warn_after):
+            warning = f"still waiting after {warn_after}s"
+            if name:
+                warning += f" for {name}"
+            rospy.logwarn_throttle(5, warning)
+        time.sleep(0.01)
