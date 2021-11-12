@@ -2,6 +2,7 @@ import copy
 import rospy
 from threading import Lock
 from typing import Optional, Type
+import time
 
 from wsg_50_common.srv import Move, Conf
 from std_srvs.srv import Empty
