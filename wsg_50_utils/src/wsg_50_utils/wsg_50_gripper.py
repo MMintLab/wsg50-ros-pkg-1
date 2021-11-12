@@ -1,4 +1,6 @@
 import copy
+import time
+
 import rospy
 from threading import Lock
 from typing import Optional, Type
@@ -106,8 +108,6 @@ class WSG50Gripper(object):
         status = self.get_status()
         speed = status.speed
         return speed
-
-
 
 
 # From arc_utilities
