@@ -1,5 +1,6 @@
 import copy
 import time
+import numpy as np
 
 import rospy
 from threading import Lock
@@ -13,8 +14,9 @@ from wsg_50_common.msg import Status
 
 class WSG50Gripper(object):
     # Wraps the services into methods
-    def __init__(self):
+    def __init__(self, safe=False):
         self.data = None
+        self.safe = safe
         self.lock = Lock()
         self.status_topic_name = '/wsg_50_driver/status'
         self.gripper_status_subscriber = rospy.Subscriber(self.status_topic_name, Status, self._gripper_status_callback)
@@ -40,11 +42,35 @@ class WSG50Gripper(object):
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
 
-    def move(self, width, speed=50.0):
+    def move(self, width, speed=50.0, repeat_move_until_ok=False):
+        init_width = self.get_width()
         rospy.wait_for_service('wsg_50_driver/move')
         try:
             move_proxy = rospy.ServiceProxy('wsg_50_driver/move', Move)
-            move_resp = move_proxy(width, speed)
+            if self.safe:
+                move_succeed = False
+                error_found = False
+                num_attempts = 500
+                for i in range(num_attempts):
+                    move_resp = move_proxy(width, speed)
+                    if move_resp.error == 0:
+                        # print('No move error')
+                        move_succeed = True
+                        if error_found:
+                            print('', end='\r')
+                        break
+                    else:
+                        error_found = True
+                        print(f'Move error detected (Error: {move_resp.error}. Doing ACK and trying again ({i+1}/{num_attempts})', end='\r')
+                        self.ack()
+                        rospy.sleep(1.)
+                        if repeat_move_until_ok:
+                            print('repeating motion -- ')
+                            self.move(init_width, speed=speed, repeat_move_until_ok=False)
+                if not move_succeed:
+                    raise AssertionError('The move motion failed')
+            else:
+                move_resp = move_proxy(width, speed)
             return move_resp.error
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
