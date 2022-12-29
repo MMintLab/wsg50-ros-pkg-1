@@ -19,7 +19,11 @@ class WSG50Gripper(object):
         self.safe = safe
         self.lock = Lock()
         self.status_topic_name = '/wsg_50_driver/status'
-        self.gripper_status_subscriber = rospy.Subscriber(self.status_topic_name, Status, self._gripper_status_callback)
+        self.gripper_status_subscriber = self._get_gripper_status_subscriber()
+
+    def _get_gripper_status_subscriber(self):
+        gripper_status_subscriber = rospy.Subscriber(self.status_topic_name, Status, self._gripper_status_callback)
+        return gripper_status_subscriber
 
     def _gripper_status_callback(self, msg):
         with self.lock:
